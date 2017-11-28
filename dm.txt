@@ -1,0 +1,337 @@
+package lidabenshi.bwie.com.jingdong.Fragment;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.ExpandableListView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import lidabenshi.bwie.com.jingdong.Adapter.CarShopAdapter;
+import lidabenshi.bwie.com.jingdong.Adapter.EveryAdapter;
+import lidabenshi.bwie.com.jingdong.Adapter.ImageLoader;
+import lidabenshi.bwie.com.jingdong.Bean.CarUserMessageBean;
+import lidabenshi.bwie.com.jingdong.Bean.Car_child_shop_Bean;
+import lidabenshi.bwie.com.jingdong.Bean.Car_shop_Bean;
+import lidabenshi.bwie.com.jingdong.Bean.RecommendBean;
+import lidabenshi.bwie.com.jingdong.Interface.CarPersonInterface;
+import lidabenshi.bwie.com.jingdong.Interface.CarShopCheckedInterface;
+import lidabenshi.bwie.com.jingdong.Interface.CarTitleInterface;
+import lidabenshi.bwie.com.jingdong.Interface.DeleteCarInterface;
+import lidabenshi.bwie.com.jingdong.Interface.NumberAndPrice;
+import lidabenshi.bwie.com.jingdong.MainActivity.LoginActivity;
+import lidabenshi.bwie.com.jingdong.MineView.CarTitleView;
+import lidabenshi.bwie.com.jingdong.MineView.EverydayView;
+import lidabenshi.bwie.com.jingdong.R;
+import lidabenshi.bwie.com.jingdong.Utils.SealUtils.CarBean;
+import lidabenshi.bwie.com.jingdong.Utils.SealUtils.CarPersonUtils;
+
+/**
+ * Created by 李大本事 on 2017/10/31.
+ */
+
+public class CarFragment extends Fragment {
+    private View view;
+    private RecyclerView rc_lv;
+    private CarTitleView ctv_title;
+    private CarShopAdapter carShopAdapter;
+    private ArrayList<RecommendBean> recommend_list = new ArrayList<>();
+    private ArrayList<CarUserMessageBean> list_play = new ArrayList<>();
+    private ArrayList<Car_shop_Bean> list_view = new ArrayList<>();
+    private EveryAdapter adapter;
+    private ExpandableListView pt_lv;
+    private EverydayView rc_lv_car;
+    private CheckBox center;
+    private TextView tv_rental;
+    private Button btn_goto;
+    private int prices;
+    private TextView tv_num;
+    private CheckBox cb_all;
+    private LinearLayout l_two;
+    private LinearLayout lll_one;
+    private CheckBox cb_alldel;
+    private Button btn_delete;
+    private boolean del = true;
+    private ArrayList<Car_shop_Bean> list_shop;
+    private ArrayList<List<Car_child_shop_Bean>> list_shop_chiled;
+    private DeleteCarInterface deleteCarInterface;
+    private LinearLayout ll_toLogin;
+    private Button btn_toLogin;
+    private Boolean isFlag = false;
+    public void setBtn_delete(DeleteCarInterface deleteCarInterface){
+        this.deleteCarInterface = deleteCarInterface;
+    }
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        view = inflater.inflate(R.layout.car_fragment_pager, container, false);
+        return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        initFind();
+        //initInvoking();
+    }
+
+    private void initFind() {
+        ctv_title = (CarTitleView) view.findViewById(R.id.ctv_title);
+        rc_lv_car = (EverydayView) view.findViewById(R.id.for_you_car);
+        rc_lv = (RecyclerView) rc_lv_car.findViewById(R.id.rc_lv);
+        pt_lv = (ExpandableListView) view.findViewById(R.id.pt_lv);
+        cb_all = (CheckBox) view.findViewById(R.id.cb_all);
+        tv_rental = (TextView) view.findViewById(R.id.tv_rental);
+        tv_num = (TextView) view.findViewById(R.id.tv_num);
+        btn_goto = (Button) view.findViewById(R.id.btn_goto);
+        l_two = (LinearLayout)view.findViewById(R.id.l_two);
+        lll_one = (LinearLayout)view.findViewById(R.id.lll_one);
+        cb_alldel = (CheckBox)view.findViewById(R.id.cb_alldel);
+        btn_delete = (Button)view.findViewById(R.id.btn_delete);
+        ll_toLogin = (LinearLayout)view.findViewById(R.id.ll_toLogin);
+        btn_toLogin = (Button)view.findViewById(R.id.btn_toLogin);
+        initCarriage();
+        initTitle();
+    }
+
+    private void initTitle() {
+        ctv_title.setCarTitleView(new CarTitleInterface() {
+            boolean b = true;
+            public TextView tv_compile;
+
+            @Override
+            public void addressClick(View v) {
+
+            }
+            //点击编辑----
+            @Override
+            public void compileClick(View v) {
+                b = !b;
+                tv_compile = (TextView)v.findViewById(R.id.tv_compile);
+                if(b){
+                    del = true;
+                    tv_compile.setText("编辑");
+                    lll_one.setVisibility(View.VISIBLE);
+                    l_two.setVisibility(View.GONE);
+                }else{
+                    del = false;
+                    tv_compile.setText("完成");
+                    lll_one.setVisibility(View.GONE);
+                    l_two.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void messageClick(View v) {
+
+            }
+        });
+    }
+
+    private void initCarriage() {
+        final CarPersonUtils carPersonUtils = new CarPersonUtils();
+        boolean isLogin = ImageLoader.sp.getBoolean("isLogin", false);
+        int userId = ImageLoader.sp.getInt("userId", 0);
+        if(!isLogin){
+            pt_lv.setVisibility(View.GONE);
+            ll_toLogin.setVisibility(View.VISIBLE);
+            btn_toLogin.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(getActivity(), LoginActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }else {
+            pt_lv.setVisibility(View.VISIBLE);
+            ll_toLogin.setVisibility(View.GONE);
+            carPersonUtils.get(userId);
+            carPersonUtils.setCarPersonInterface(new CarPersonInterface() {
+
+                //请求数据成功
+                @Override
+                public void CarSuccess(final CarBean bean) {
+
+                    List<CarBean.DataBean> data = bean.getData();
+                    list_shop = new ArrayList<Car_shop_Bean>();
+                    list_shop_chiled = new ArrayList<List<Car_child_shop_Bean>>();
+                    //设置选择状态
+                    for (int i = 0; i < data.size(); i++) {
+                        String sellerName = data.get(i).getSellerName();
+                        list_shop.add(new Car_shop_Bean(sellerName, false));
+
+                        List<CarBean.DataBean.ListBean> list = data.get(i).getList();
+
+                        ArrayList<Car_child_shop_Bean> car_shop_been = new ArrayList<>();
+
+                        for (CarBean.DataBean.ListBean childList : list) {
+                            int num = childList.getNum();
+                            float price = childList.getPrice();
+                            String images = childList.getImages();
+                            String title = childList.getTitle();
+                            String[] split = images.toString().split("\\|");
+                            car_shop_been.add(new Car_child_shop_Bean(title, num, price, split[0], false));
+                        }
+                        list_shop_chiled.add(car_shop_been);
+                    }
+
+                    //设置适配器
+                    carShopAdapter = new CarShopAdapter(getActivity(), list_shop, list_shop_chiled);
+
+                    cb_all.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            boolean checked = cb_all.isChecked();
+                            for (int i = 0; i < list_shop.size(); i++) {
+                                list_shop.get(i).setFlag(checked);
+                            }
+
+                            for (List<Car_child_shop_Bean> i : list_shop_chiled) {
+                                for (int j = 0; j < i.size(); j++) {
+                                    i.get(j).setChildCheck(checked);
+                                }
+                            }
+                            carShopAdapter.notifyDataSetChanged();
+                            foreach(list_shop_chiled);
+                        }
+                    });
+
+                    cb_alldel.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            boolean checked = cb_alldel.isChecked();
+                            for (int i = 0; i < list_shop.size(); i++) {
+                                list_shop.get(i).setFlag(checked);
+                            }
+
+                            for (List<Car_child_shop_Bean> i : list_shop_chiled) {
+                                for (int j = 0; j < i.size(); j++) {
+                                    i.get(j).setChildCheck(checked);
+                                }
+                            }
+                            carShopAdapter.notifyDataSetChanged();
+                            deleach(list_shop_chiled);
+                        }
+                    });
+
+
+                    carShopAdapter.setCarShop(new CarShopCheckedInterface() {
+                        @Override
+                        public void AllChecked(boolean ischeck) {
+                            if (!ischeck) {
+                                cb_all.setChecked(false);
+                            } else {
+                                cb_all.setChecked(true);
+                            }
+                        }
+                    });
+
+                    carShopAdapter.setNumberAndPrice(new NumberAndPrice() {
+                        @Override
+                        public void AllNumAndPriceClick(final ArrayList<List<Car_child_shop_Bean>> list_shop_child, final int position) {
+                            if (del) {
+                                int max = 0;
+                                int nums = 0;
+                                for (List<Car_child_shop_Bean> list_child : list_shop_child) {
+                                    for (int i = 0; i < list_child.size(); i++) {
+                                        boolean childCheck = list_child.get(i).isChildCheck();
+                                        Car_child_shop_Bean car_child_shop_bean = list_child.get(i);
+                                        if (childCheck) {
+                                            int num = car_child_shop_bean.getNum();
+                                            double price = car_child_shop_bean.getPrice();
+                                            int prices = (int) price;
+                                            max += prices * num;
+                                            nums++;
+                                        }
+                                    }
+                                }
+                                tv_rental.setText("合计:￥" + max);
+                                tv_num.setText("数量:" + nums);
+                            } else {
+                                btn_delete.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        list_shop_child.remove(2);
+                                        list_shop_child.remove(position);
+                                        carShopAdapter.notifyDataSetChanged();
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                    pt_lv.setAdapter(carShopAdapter);
+                    //让他默认收回
+                    int count = pt_lv.getCount();
+                    for (int i = 0; i < count; i++) {
+                        pt_lv.expandGroup(i);
+                    }
+                    pt_lv.setGroupIndicator(null);
+                }
+
+                //失败网络请求
+                @Override
+                public void CarFailed(String message) {
+                }
+            });
+        }
+    }
+
+    public void foreach(ArrayList<List<Car_child_shop_Bean>> list_shop_child){
+        int max = 0;
+        int nums = 0;
+        for(List<Car_child_shop_Bean> list_child:list_shop_child){
+            for (int i = 0; i < list_child.size(); i++) {
+                boolean childCheck = list_child.get(i).isChildCheck();
+                Car_child_shop_Bean car_child_shop_bean = list_child.get(i);
+                if(childCheck){
+                    int num = car_child_shop_bean.getNum();
+                    double price = car_child_shop_bean.getPrice();
+                    int prices = (int) price;
+                    max += prices*num;
+                    nums++;
+                }
+            }
+        }
+        tv_rental.setText("合计:￥"+max);
+        tv_num.setText("数量:"+nums);
+    }
+
+    public void deleach(final ArrayList<List<Car_child_shop_Bean>> list_shop_child){
+        btn_delete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                list_shop.clear();
+                list_shop_chiled.clear();
+                cb_alldel.setChecked(false);
+                carShopAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    //不可视状态将刷新开启
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isFlag = true;
+    }
+    //得到焦点时的方法
+    @Override
+    public void onResume() {
+        super.onResume();
+        if(isFlag){
+            initCarriage();
+        }
+    }
+}
